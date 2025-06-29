@@ -2,13 +2,13 @@ use crate::config::ErgoConfig;
 use crate::ergo_client::ErgoClient;
 use crate::model;
 use crate::model::{
-    Address, Asset, AssetAction, AssetName, AssetPointer, Block, BlockHash, BlockHeader, BlockHeight, BlockTimestamp, Transaction, TxHash, TxPointer,
-    Utxo, UtxoPointer,
+    Address, Asset, AssetAction, AssetName, AssetPointer, AssetType, Block, BlockHash, BlockHeader, BlockHeight, BlockTimestamp, Transaction, TxHash,
+    TxPointer, Utxo, UtxoPointer,
 };
 use async_trait::async_trait;
 use chain_syncer::api::{BlockProvider, ChainSyncError};
 use chain_syncer::info;
-use chain_syncer::model::{AssetType, BoxWeight};
+use chain_syncer::monitor::BoxWeight;
 use ergo_lib::{chain::block::FullBlock, wallet::signing::ErgoTransaction};
 use ergo_lib::{
     ergotree_ir::{
@@ -17,12 +17,11 @@ use ergo_lib::{
     },
     wallet::box_selector::ErgoBoxAssets,
 };
-use futures::stream::StreamExt;
 use futures::Stream;
+use futures::stream::StreamExt;
 use redbit::*;
 use reqwest::Url;
 use std::{pin::Pin, str::FromStr, sync::Arc};
-use tokio::task::JoinError;
 
 pub struct ErgoBlockProvider {
     pub client: Arc<ErgoClient>,
@@ -142,7 +141,7 @@ impl BlockProvider<FullBlock, Block> for ErgoBlockProvider {
         &self,
         chain_tip_header: BlockHeader,
         last_header: Option<BlockHeader>,
-    ) -> Pin<Box<dyn Stream<Item = Result<FullBlock, JoinError>> + Send + 'life0>> {
+    ) -> Pin<Box<dyn Stream<Item = FullBlock> + Send + 'life0>> {
         let last_height = last_header.map_or(1, |h| h.id.0);
         info!("Indexing from {} to {}", last_height, chain_tip_header.id.0);
         let heights = last_height..=chain_tip_header.id.0;
@@ -153,6 +152,10 @@ impl BlockProvider<FullBlock, Block> for ErgoBlockProvider {
                 tokio::task::spawn(async move { client.get_block_by_height_async(BlockHeight(height)).await.unwrap() })
             })
             .buffered(self.fetching_par)
+            .map(|res| match res {
+                Ok(block) => block,
+                Err(e) => panic!("Error: {:?}", e), // lousy error handling
+            })
             .boxed()
     }
 }

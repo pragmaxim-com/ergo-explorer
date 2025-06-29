@@ -3,6 +3,15 @@ use std::error::Error;
 use chrono::DateTime;
 pub use redbit::*;
 use std::fmt;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+
+#[derive(Clone, Copy, Debug, IntoPrimitive, PartialEq, TryFromPrimitive, )]
+#[repr(u8)]
+pub enum AssetType {
+    Mint = 0,
+    Transfer = 1,
+    Burn = 2,
+}
 
 #[column]
 pub struct AssetName(pub Vec<u8>);
