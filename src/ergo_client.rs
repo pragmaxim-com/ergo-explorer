@@ -1,6 +1,5 @@
 use crate::model::{BlockHash, BlockHeight, ExplorerError};
 use ergo_lib::chain::block::FullBlock;
-use redbit::hex;
 use reqwest::{
     blocking, header::{ACCEPT, CONTENT_TYPE}, Client, RequestBuilder,
     Url,

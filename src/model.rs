@@ -13,37 +13,23 @@ pub enum AssetType {
     Burn = 2,
 }
 
-#[column]
-pub struct AssetName(pub Vec<u8>);
-#[column]
-pub struct AssetAction(pub u8);
-#[column]
-pub struct Tree(pub Vec<u8>);
-#[column]
-pub struct TreeT8(pub Vec<u8>);
-#[column]
-pub struct BoxId(pub Vec<u8>);
+#[root_key]pub struct BlockHeight(pub u32);
 
-#[root_key]
-pub struct BlockHeight(pub u32);
+#[pointer_key(u16)]pub struct TxPointer(BlockHeight);
+#[pointer_key(u16)]pub struct UtxoPointer(TxPointer);
+#[pointer_key(u16)]pub struct InputPointer(TxPointer);
+#[pointer_key(u8)]pub struct AssetPointer(UtxoPointer);
 
-#[pointer_key(u16)]
-pub struct TxPointer(BlockHeight);
-#[pointer_key(u16)]
-pub struct UtxoPointer(TxPointer);
-#[pointer_key(u16)]
-pub struct InputPointer(TxPointer);
-#[pointer_key(u8)]
-pub struct AssetPointer(UtxoPointer);
+#[column]pub struct AssetName(pub Vec<u8>);
+#[column]pub struct AssetAction(pub u8);
+#[column]pub struct Tree(pub Vec<u8>);
+#[column]pub struct TreeT8(pub Vec<u8>);
+#[column]pub struct BoxId(pub Vec<u8>);
 
-#[column]
-pub struct Hash(pub String);
-#[column]
-pub struct BlockHash(pub [u8; 32]);
-#[column]
-pub struct TxHash(pub [u8; 32]);
-#[column]
-pub struct Address(pub Vec<u8>);
+#[column]pub struct Hash(pub String);
+#[column]pub struct BlockHash(pub [u8; 32]);
+#[column]pub struct TxHash(pub [u8; 32]);
+#[column]pub struct Address(pub Vec<u8>);
 
 #[column]
 #[derive(Copy, Hash)]
