@@ -1,11 +1,11 @@
-use crate::model::{Block, BlockHash, BlockHeader, BlockHeight, InputPointer, InputRef, TxPointer, Utxo};
+use crate::model::{Block, BlockHash, BlockHeader, BlockPointer, Height, InputRef, TransactionPointer, Utxo};
 use chain_syncer::api::*;
 use redbit::redb::ReadTransaction;
 use redbit::*;
 use std::sync::Arc;
 
 pub struct ErgoBlockPersistence {
-    pub db: Arc<redb::Database>,
+    pub db: Arc<Database>,
 }
 
 impl ErgoBlockPersistence {
@@ -15,9 +15,9 @@ impl ErgoBlockPersistence {
                 let utxo_pointers = Utxo::get_ids_by_box_id(read_tx, &box_id).expect("Failed to get Utxo by ErgoBox");
                 match utxo_pointers.first() {
                     Some(utxo_pointer) => {
-                        tx.inputs.push(InputRef { id: InputPointer::from_parent(utxo_pointer.parent.clone(), utxo_pointer.index()) })
+                        tx.inputs.push(InputRef { id: TransactionPointer::from_parent(utxo_pointer.parent.clone(), utxo_pointer.index()) })
                     }
-                    None => tx.inputs.push(InputRef { id: InputPointer::from_parent(TxPointer::from_parent(BlockHeight(0), 0), 0) }),
+                    None => tx.inputs.push(InputRef { id: TransactionPointer::from_parent(BlockPointer::from_parent(Height(0), 0), 0) }),
                 }
             }
         }
@@ -40,15 +40,9 @@ impl BlockPersistence<Block> for ErgoBlockPersistence {
 
     fn store_blocks(&self, mut blocks: Vec<Block>) -> Result<(), ChainSyncError> {
         for block in &mut blocks {
-            {
-                let read_tx = self.db.begin_read()?;
-                Self::populate_inputs(&read_tx, block)?;
-            }
-            {
-                let write_ins = self.db.begin_write()?;
-                Block::store(&write_ins, block)?;
-                write_ins.commit()?;
-            }
+            let read_tx = self.db.begin_read()?;
+            Self::populate_inputs(&read_tx, block)?;
+            Block::store_and_commit(&self.db, block)?;
         }
         Ok(())
     }

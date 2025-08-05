@@ -1,3 +1,7 @@
+#![feature(test)]
+extern crate test;
+
+mod codec;
 mod block_persistence;
 mod block_provider;
 mod config;

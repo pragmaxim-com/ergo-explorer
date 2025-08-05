@@ -1,4 +1,4 @@
-use crate::model::{BlockHash, BlockHeight, ExplorerError};
+use crate::model::{BlockHash, Height, ExplorerError};
 use ergo_lib::chain::block::FullBlock;
 use reqwest::{
     blocking, header::{ACCEPT, CONTENT_TYPE}, Client, RequestBuilder,
@@ -43,7 +43,7 @@ impl ErgoClient {
         Ok(client)
     }
 
-    pub(crate) async fn get_block_by_height_async(&self, height: BlockHeight) -> Result<FullBlock, ExplorerError> {
+    pub(crate) async fn get_block_by_height_async(&self, height: Height) -> Result<FullBlock, ExplorerError> {
         let block_ids = self.get_block_ids_by_height_async(height).await?;
 
         self.get_block_by_hash_async(block_ids.first().unwrap()).await
@@ -61,11 +61,11 @@ impl ErgoClient {
             Err(ExplorerError::Custom(error))
         } else {
             let node_info = response.json::<NodeInfo>().await?;
-            self.get_block_by_height_async(BlockHeight(node_info.full_height)).await
+            self.get_block_by_height_async(Height(node_info.full_height)).await
         }
     }
 
-    pub async fn get_block_ids_by_height_async(&self, height: BlockHeight) -> Result<Vec<String>, ExplorerError> {
+    pub async fn get_block_ids_by_height_async(&self, height: Height) -> Result<Vec<String>, ExplorerError> {
         let block_ids_url = self.node_url.join(&format!("blocks/at/{}", &height.0.to_string()))?;
         let block_ids = ErgoClient::set_async_req_headers(ErgoClient::build_async_client()?.get(block_ids_url), &self.api_key)
             .send()
@@ -75,7 +75,7 @@ impl ErgoClient {
         Ok(block_ids)
     }
 
-    pub fn get_block_ids_by_height_sync(&self, height: BlockHeight) -> Result<Vec<String>, ExplorerError> {
+    pub fn get_block_ids_by_height_sync(&self, height: Height) -> Result<Vec<String>, ExplorerError> {
         let block_ids_url = self.node_url.join(&format!("blocks/at/{}", &height.0.to_string()))?;
         let block_ids = ErgoClient::set_blocking_req_headers(ErgoClient::build_blocking_client()?.get(block_ids_url), &self.api_key)
             .send()?
