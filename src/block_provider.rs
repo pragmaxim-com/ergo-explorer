@@ -144,18 +144,18 @@ impl BlockProvider<FullBlock, Block> for ErgoBlockProvider {
         Ok(processed_block.header)
     }
 
-    async fn stream(
+    fn stream(
         &self,
         chain_tip_header: BlockHeader,
         last_header: Option<BlockHeader>,
-    ) -> Pin<Box<dyn Stream<Item = FullBlock> + Send + 'life0>> {
+    ) -> Pin<Box<dyn Stream<Item = FullBlock> + Send + 'static>> {
         let last_height = last_header.map_or(1, |h| h.id.0);
         info!("Indexing from {} to {}", last_height, chain_tip_header.id.0);
         let heights = last_height..=chain_tip_header.id.0;
-
+        let client = Arc::clone(&self.client);
         tokio_stream::iter(heights)
-            .map(|height| {
-                let client = Arc::clone(&self.client);
+            .map(move |height| {
+                let client = Arc::clone(&client);
                 tokio::task::spawn(async move { client.get_block_by_height_async(Height(height)).await.unwrap() })
             })
             .buffered(self.fetching_par)
